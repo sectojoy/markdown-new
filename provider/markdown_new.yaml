@@ -1,0 +1,17 @@
+identity:
+  author: striver
+  name: markdown_new
+  label:
+    en_US: Markdown New
+    zh_Hans: Markdown New
+  description:
+    en_US: Convert URL content into Markdown with markdown.new.
+    zh_Hans: 使用 markdown.new 将 URL 内容转换为 Markdown。
+  icon: icon.svg
+
+tools:
+  - tools/url_to_markdown/url_to_markdown.yaml
+
+extra:
+  python:
+    source: provider/markdown_new.py

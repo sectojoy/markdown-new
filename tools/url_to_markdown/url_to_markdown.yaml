@@ -1,0 +1,100 @@
+identity:
+  name: url_to_markdown
+  author: striver
+  label:
+    en_US: URL to Markdown
+    zh_Hans: URL 转 Markdown
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Convert a web page URL into Markdown using markdown.new.
+    zh_Hans: 使用 markdown.new 将网页 URL 转换为 Markdown。
+  llm: Convert a URL into Markdown. Supports markdown.new options like extraction method and retaining images.
+
+parameters:
+  - name: url
+    type: string
+    required: true
+    label:
+      en_US: URL
+      zh_Hans: 网页 URL
+    human_description:
+      en_US: The full web URL to convert into Markdown.
+      zh_Hans: 要转换为 Markdown 的完整网页 URL。
+    llm_description: A valid HTTP or HTTPS URL that will be fetched and converted to Markdown.
+    form: llm
+    placeholder:
+      en_US: https://example.com/article
+      zh_Hans: https://example.com/article
+
+  - name: method
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: Extraction Method
+      zh_Hans: 提取方法
+    human_description:
+      en_US: Extraction strategy used by markdown.new.
+      zh_Hans: markdown.new 使用的提取策略。
+    llm_description: Extraction strategy. auto is recommended; ai uses AI extraction; browser uses browser rendering.
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: auto (recommended)
+          zh_Hans: auto（推荐）
+      - value: ai
+        label:
+          en_US: ai
+          zh_Hans: ai
+      - value: browser
+        label:
+          en_US: browser
+          zh_Hans: browser
+
+  - name: retain_images
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Retain Images
+      zh_Hans: 保留图片
+    human_description:
+      en_US: Keep image references in Markdown output.
+      zh_Hans: 在 Markdown 输出中保留图片引用。
+    llm_description: If true, markdown.new keeps image references in the generated Markdown.
+    form: form
+
+  - name: timeout_seconds
+    type: number
+    required: false
+    default: 60
+    min: 5
+    max: 300
+    label:
+      en_US: Timeout (seconds)
+      zh_Hans: 超时（秒）
+    human_description:
+      en_US: HTTP request timeout when calling markdown.new API.
+      zh_Hans: 调用 markdown.new API 时的 HTTP 超时时间。
+    llm_description: Timeout in seconds for the API request. Range 5 to 300.
+    form: form
+
+  - name: include_response_meta
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Include Response Metadata
+      zh_Hans: 包含响应元数据
+    human_description:
+      en_US: Return structured metadata such as token and rate-limit headers.
+      zh_Hans: 返回结构化元数据，如 token 与限流响应头。
+    llm_description: If true, returns a JSON payload with markdown and response headers in addition to plain markdown text.
+    form: form
+
+extra:
+  python:
+    source: tools/url_to_markdown/url_to_markdown.py

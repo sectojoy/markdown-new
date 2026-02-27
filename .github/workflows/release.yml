@@ -1,0 +1,85 @@
+name: Build And Release Dify Plugin
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (default: v<manifest version>)"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dify CLI
+        run: |
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fL "https://github.com/langgenius/dify-plugin-daemon/releases/latest/download/dify-plugin-linux-amd64" \
+            -o "${RUNNER_TEMP}/bin/dify"
+          chmod +x "${RUNNER_TEMP}/bin/dify"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+          "${RUNNER_TEMP}/bin/dify" version
+
+      - name: Build package
+        run: bash ./build/build.sh --clean
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          PLUGIN_NAME="$(grep -m1 '^name:' manifest.yaml | cut -d: -f2- | xargs)"
+          PLUGIN_VERSION="$(grep -m1 '^version:' manifest.yaml | cut -d: -f2- | xargs)"
+
+          if [ -z "${PLUGIN_NAME}" ] || [ -z "${PLUGIN_VERSION}" ]; then
+            echo "Failed to parse plugin name/version from manifest.yaml"
+            exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG_NAME="${GITHUB_REF_NAME}"
+          else
+            TAG_NAME="${{ inputs.tag }}"
+            if [ -z "${TAG_NAME}" ]; then
+              TAG_NAME="v${PLUGIN_VERSION}"
+            fi
+          fi
+
+          echo "plugin_name=${PLUGIN_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "plugin_version=${PLUGIN_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag_name=${TAG_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "release_name=${PLUGIN_NAME} ${PLUGIN_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload build artifact to workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: dify-plugin-package
+          path: |
+            build/output/*.difypkg
+            build/output/*.sha256
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: ${{ steps.meta.outputs.release_name }}
+          files: |
+            build/output/*.difypkg
+            build/output/*.sha256
+          generate_release_notes: true
+          overwrite_files: true
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
